@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rút Thăm Bao Lì Xì - Vận May Trời Phú</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- AOS Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Pacifico&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tetRed: '#D90429',
+                        tetGold: '#FFD700',
+                        tetDark: '#8D0801',
+                    },
+                    fontFamily: {
+                        slogan: ['Pacifico', 'cursive'],
+                        body: ['Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: radial-gradient(circle at center, #8D0801, #2b0300);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar tùy chỉnh */
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #FFD700; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #FFC107; }
+
+        /* Hiệu ứng lật thẻ 3D */
+        .perspective-1000 { perspective: 1000px; }
+        .card-inner {
+            position: relative; width: 100%; height: 100%; text-align: center;
+            transition: transform 0.8s; transform-style: preserve-3d; cursor: pointer;
+        }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back {
+            position: absolute; width: 100%; height: 100%;
+            -webkit-backface-visibility: hidden; backface-visibility: hidden;
+            border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #D90429 0%, #EF233C 100%);
+            border: 2px solid #FFD700;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+        }
+
+        .card-back {
+            background: #FFF8E1; color: #D90429; transform: rotateY(180deg);
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            border: 4px solid #FFD700; font-weight: bold; padding: 10px;
+        }
+
+        /* Hoa đào rơi */
+        .snowflake {
+            position: fixed; top: -10px; z-index: 9999; user-select: none; cursor: default;
+            animation-name: snowflakes-fall, snowflakes-shake;
+            animation-duration: 10s, 3s; animation-timing-function: linear, ease-in-out;
+            animation-iteration-count: infinite, infinite; animation-play-state: running, running;
+            color: #FFC0CB; font-size: 1.5em;
+        }
+        @keyframes snowflakes-fall { 0% { top: -10%; } 100% { top: 100%; } }
+        @keyframes snowflakes-shake { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(80px); } }
+        
+        .snowflake:nth-of-type(0) { left: 1%; animation-delay: 0s, 0s; }
+        .snowflake:nth-of-type(1) { left: 10%; animation-delay: 1s, 1s; }
+        .snowflake:nth-of-type(2) { left: 20%; animation-delay: 6s, 0.5s; }
+        .snowflake:nth-of-type(3) { left: 30%; animation-delay: 4s, 2s; }
+        .snowflake:nth-of-type(4) { left: 40%; animation-delay: 2s, 2s; }
+        .snowflake:nth-of-type(5) { left: 50%; animation-delay: 8s, 3s; }
+    </style>
+</head>
+<body class="font-body text-white">
+
+    <!-- Hoa đào -->
+    <div class="snowflakes" aria-hidden="true">
+        <div class="snowflake">🌸</div><div class="snowflake">❀</div><div class="snowflake">🌸</div>
+        <div class="snowflake">❀</div><div class="snowflake">🌸</div><div class="snowflake">❀</div>
+    </div>
+
+    <!-- Nhạc nền -->
+    <audio id="bgMusic" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Header Controls -->
+    <div class="fixed top-4 left-0 right-0 px-4 flex justify-between items-start z-50 pointer-events-none">
+        
+        <!-- Cụm thông tin người chơi (Bên Trái) -->
+        <div class="flex flex-col gap-3 pointer-events-auto">
+            <!-- Bộ đếm lượt -->
+            <div class="bg-yellow-500 border-2 border-red-800 text-red-900 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 font-bold animate-pulse w-fit" id="turn-counter-box">
+                <i data-lucide="ticket" class="w-5 h-5"></i>
+                <span>Lượt: <span id="turn-count" class="text-xl">0</span></span>
+            </div>
+            
+            <!-- Tổng tiền tích lũy (MỚI) -->
+            <div class="bg-red-700 border-2 border-yellow-400 text-yellow-300 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 font-bold w-fit transition-all transform hover:scale-105">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+                <span>Tổng: <span id="total-money-display" class="text-xl">0</span> đ</span>
+            </div>
+        </div>
+
+        <!-- Nút nhạc (Bên Phải) -->
+        <button id="musicToggle" class="pointer-events-auto bg-yellow-500 border-2 border-red-800 text-red-900 p-2 md:px-4 md:py-2 rounded-full shadow-lg hover:scale-110 transition-transform flex items-center gap-2 font-bold">
+            <i data-lucide="music"></i> <span class="hidden md:inline">Bật Nhạc</span>
+        </button>
+    </div>
+
+    <div class="container mx-auto px-4 py-24 min-h-screen flex flex-col items-center justify-start">
+        
+        <div class="text-center mb-10" data-aos="fade-down" data-aos-duration="1000">
+            <h1 class="text-5xl md:text-7xl font-bold text-tetGold drop-shadow-md mb-4 font-slogan">
+                Lì Xì Bính Ngọ
+            </h1>
+            <p class="text-xl md:text-3xl text-white italic font-light tracking-wide border-b-2 border-tetGold inline-block pb-2">
+                "Mã đáo thành công - Tiền vào như nước"
+            </p>
+        </div>
+
+        <!-- BÀN GAME -->
+        <div id="game-board" class="grid grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl">
+            <!-- Cards render by JS -->
+        </div>
+
+        <!-- Nút Reset -->
+        <div class="mt-8 text-center" data-aos="fade-up">
+            <button onclick="userResetGame()" class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-red-900 font-bold py-3 px-8 rounded-full text-xl shadow-lg transform transition hover:scale-105 hover:shadow-2xl ring-4 ring-yellow-200 ring-opacity-50 flex items-center gap-2 mx-auto">
+                <i data-lucide="rotate-ccw"></i> Chơi Lại (Reset Bàn)
+            </button>
+            <p class="text-yellow-200/60 text-sm mt-2 italic">(Không hồi lại lượt chơi)</p>
+        </div>
+
+        <!-- KHU VỰC THÔNG TIN -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl mt-12 mb-8">
+            
+            <!-- Bảng giải thưởng -->
+            <div class="bg-red-900/80 border-2 border-yellow-500 rounded-xl p-6 shadow-lg backdrop-blur-sm relative overflow-hidden" data-aos="fade-right">
+                <div class="absolute -right-6 -top-6 text-yellow-500/10 transform rotate-12">
+                    <i data-lucide="gift" width="120" height="120"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-yellow-400 mb-4 font-slogan text-center border-b border-yellow-500/30 pb-2 flex items-center justify-center gap-2">
+                    <i data-lucide="trophy"></i> Cơ Cấu Giải Thưởng
+                </h3>
+                <div class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2" id="prize-list-container">
+                    <!-- JS sẽ điền danh sách vào đây -->
+                </div>
+            </div>
+
+            <!-- Lịch sử nhận lộc -->
+            <div class="bg-red-900/80 border-2 border-yellow-500 rounded-xl p-6 shadow-lg backdrop-blur-sm relative overflow-hidden" data-aos="fade-left">
+                <div class="absolute -right-6 -top-6 text-yellow-500/10 transform -rotate-12">
+                    <i data-lucide="scroll-text" width="120" height="120"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-yellow-400 mb-4 font-slogan text-center border-b border-yellow-500/30 pb-2 flex items-center justify-center gap-2">
+                    <i data-lucide="history"></i> Lịch Sử Nhận Lộc
+                </h3>
+                <div class="space-y-3 max-h-60 overflow-y-auto custom-scrollbar pr-2" id="history-list-container">
+                    <p class="text-center text-gray-300 italic py-4 flex flex-col items-center gap-2" id="empty-history">
+                        <i data-lucide="hourglass" class="opacity-50"></i>
+                        Chưa có ai mở bao lì xì...
+                    </p>
+                    <!-- JS sẽ thêm lịch sử vào đây -->
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-auto py-6 text-yellow-200/60 text-sm flex items-center gap-1">
+            <i data-lucide="heart" size="14" class="text-red-500 fill-red-500"></i>
+            Designed with Tailwind & Lucide
+        </div>
+    </div>
+
+    <!-- Modal Kết quả -->
+    <div id="resultModal" class="fixed inset-0 flex items-center justify-center bg-black/80 z-50 hidden transition-opacity duration-300 opacity-0">
+        <div class="bg-gradient-to-b from-red-600 to-red-800 p-1 border-4 border-yellow-500 rounded-2xl max-w-md w-full mx-4 transform scale-90 transition-transform duration-300" id="modalContent">
+            <div class="bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] bg-repeat p-8 rounded-xl text-center flex flex-col items-center">
+                <div class="text-yellow-400 mb-4 animate-bounce" id="modalIcon">
+                    <i data-lucide="party-popper" width="64" height="64"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-yellow-400 mb-2 font-slogan" id="modalTitle">Kết Quả</h2>
+                <p class="text-white mb-6" id="modalSubtitle">Bạn đã rút được:</p>
+                
+                <!-- Khu vực hiển thị kết quả -->
+                <div id="modalPrize" class="text-3xl md:text-4xl font-black text-yellow-300 mb-2 drop-shadow-md px-2">...</div>
+                
+                <!-- Khu vực hiển thị lời chúc (nếu có) -->
+                <div id="modalWish" class="text-lg text-white/90 italic mb-8 px-4 font-serif hidden"></div>
+                
+                <button onclick="handleModalAction()" id="modalBtn" class="bg-yellow-500 hover:bg-yellow-400 text-red-900 font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 flex items-center gap-2 mx-auto">
+                    <span>Tiếp Tục</span> <i data-lucide="arrow-right-circle"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        AOS.init();
+
+        // ==========================================
+        // DANH SÁCH LỜI CHÚC BÍNH NGỌ 2026
+        // ==========================================
+        const HORSE_YEAR_WISHES = [
+            "Năm mới Bính Ngọ - Mã đáo thành công, bách chiến bách thắng!",
+            "Sức khỏe dẻo dai như ngựa chiến ngàn dặm, bệnh tật tan biến.",
+            "Công danh thăng tiến thần tốc, phi nước đại về đích vinh quang.",
+            "Tiền vào như nước sông Đà, tiền ra nhỏ giọt như cà phê phin.",
+            "Tấn tài tấn lộc, gia đạo bình an, vạn sự như ý.",
+            "Đường tình duyên phơi phới, hạnh phúc đong đầy trọn năm.",
+            "Năm mới sung túc, vàng đeo trĩu cổ, lộc lá đầy nhà.",
+            "Khởi đầu mới thuận lợi, vạn dặm bình an, tài lộc song hành.",
+            "Chúc bạn năm Bính Ngọ: Vui vẻ như Chim Sẻ, Khỏe mạnh như Đại Bàng, Giàu sang như Chim Phụng!",
+            "Đa lộc, đa tài, đa phú quý. Đắc thời, đắc lợi, đắc nhân tâm."
+        ];
+
+        // ==========================================
+        // KHU VỰC NHÀ CÁI
+        // ==========================================
+        const CONFIG_DATA = {
+            initialTurns: 3, 
+            highValueThreshold: 50000, 
+            houseEdgeProbability: 0.7, 
+
+            prizes: [
+                { id: 1, text: "10.000 VNĐ", value: 10000, weight: 40, message: "Lộc nhỏ đầu năm!", icon: "coins" },
+                { id: 2, text: "20.000 VNĐ", value: 20000, weight: 25, message: "Tiền cà phê nhé!", icon: "coins" },
+                { id: 3, text: "50.000 VNĐ", value: 50000, weight: 10, message: "Một bữa sáng ngon!", icon: "banknote" },
+                { id: 4, text: "100.000 VNĐ", value: 100000, weight: 2, message: "Vận may đang tới!", icon: "banknote" }, 
+                { id: 5, text: "200.000 VNĐ", value: 200000, weight: 0.5, message: "Đại gia đây rồi!", icon: "gem" }, 
+                { id: 6, text: "500.000 VNĐ", value: 500000, weight: 0.05, message: "JACKPOT! CHÚC MỪNG!", icon: "crown" }, 
+                // ID 7: Lời Chúc (Sẽ được thay nội dung động)
+                { id: 7, text: "Lời Chúc", value: 0, weight: 50, message: "Chúc bạn năm mới An Khang!", icon: "clover" }, 
+                { id: 8, text: "May mắn lần sau", value: 0, weight: 30, message: "Thử lại vận may nhé!", icon: "frown" } 
+            ]
+        };
+        // ==========================================
+
+        const TOTAL_CARDS = 12;
+        let isProcessing = false;
+        let historyCount = 0; 
+        let currentTurns = CONFIG_DATA.initialTurns;
+        let totalMoney = 0; // Biến lưu tổng tiền
+
+        // === CẬP NHẬT UI (TIỀN & LƯỢT) ===
+        function updateStatsDisplay() {
+            // Cập nhật lượt
+            const turnEl = document.getElementById('turn-count');
+            turnEl.innerText = currentTurns;
+            
+            const turnBox = document.getElementById('turn-counter-box');
+            if(currentTurns === 0) {
+                turnBox.classList.remove('bg-yellow-500', 'text-red-900');
+                turnBox.classList.add('bg-gray-600', 'text-white');
+            } else {
+                turnBox.classList.add('bg-yellow-500', 'text-red-900');
+                turnBox.classList.remove('bg-gray-600', 'text-white');
+            }
+
+            // Cập nhật tiền
+            const moneyEl = document.getElementById('total-money-display');
+            // Format số tiền kiểu VN (10.000)
+            moneyEl.innerText = totalMoney.toLocaleString('vi-VN');
+        }
+
+        // === RENDER BẢNG GIẢI THƯỞNG ===
+        function renderPrizeList() {
+            const container = document.getElementById('prize-list-container');
+            let html = '';
+            const sortedPrizes = [...CONFIG_DATA.prizes].sort((a, b) => b.value - a.value);
+
+            sortedPrizes.forEach(prize => {
+                let badgeClass = "bg-red-800 text-gray-200";
+                
+                if(prize.value >= 500000) { badgeClass = "bg-yellow-500 text-red-900 font-bold animate-pulse"; }
+                else if(prize.value >= 100000) { badgeClass = "bg-yellow-600 text-white font-bold"; }
+                else if(prize.value === 0) { badgeClass = "bg-gray-700 text-gray-300"; }
+
+                html += `
+                    <div class="flex items-center justify-between p-2 rounded bg-black/20 hover:bg-black/40 transition">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="${prize.icon}" class="w-5 h-5 text-yellow-400"></i>
+                            <span class="font-medium text-white">${prize.text}</span>
+                        </div>
+                        <span class="text-xs px-2 py-1 rounded ${badgeClass}">${prize.value > 0 ? 'Có thưởng' : 'Vui vẻ'}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // === THÊM VÀO LỊCH SỬ ===
+        function addToHistory(prize, customMessage = null) {
+            const container = document.getElementById('history-list-container');
+            const emptyMsg = document.getElementById('empty-history');
+            if(emptyMsg) emptyMsg.style.display = 'none';
+
+            historyCount++;
+            const now = new Date();
+            const timeString = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+            const messageToShow = customMessage || prize.message;
+
+            const item = document.createElement('div');
+            item.className = "flex items-center gap-3 p-3 bg-white/10 rounded-lg border-l-4 border-yellow-500 animate-[fadeIn_0.5s_ease-out]";
+            
+            let valueColor = prize.value > 0 ? "text-yellow-300" : "text-gray-300";
+            
+            item.innerHTML = `
+                <div class="bg-red-900 text-yellow-500 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">
+                    ${historyCount}
+                </div>
+                <div class="flex-1">
+                    <div class="font-bold ${valueColor} flex items-center gap-2">
+                        <i data-lucide="${prize.icon}" class="w-4 h-4"></i>
+                        ${prize.text}
+                    </div>
+                    <div class="text-xs text-gray-300 line-clamp-1" title="${messageToShow}">${messageToShow}</div>
+                </div>
+                <div class="text-xs text-gray-400 font-mono flex items-center gap-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i> ${timeString}
+                </div>
+            `;
+
+            container.insertBefore(item, container.firstChild);
+            lucide.createIcons();
+        }
+
+        // === LOGIC TÍNH TOÁN ===
+        function getWeightedRandomPrize() {
+            let totalWeight = CONFIG_DATA.prizes.reduce((sum, item) => sum + item.weight, 0);
+            let random = Math.random() * totalWeight;
+            let selectedPrize = CONFIG_DATA.prizes[0];
+            
+            for (let item of CONFIG_DATA.prizes) {
+                if (random < item.weight) {
+                    selectedPrize = item;
+                    break;
+                }
+                random -= item.weight;
+            }
+
+            if (selectedPrize.value >= CONFIG_DATA.highValueThreshold) {
+                const houseRandom = Math.random(); 
+                if (houseRandom < CONFIG_DATA.houseEdgeProbability) { 
+                    return CONFIG_DATA.prizes.find(p => p.id === 7) || CONFIG_DATA.prizes[0];
+                }
+            }
+            return selectedPrize;
+        }
+
+        const gameBoard = document.getElementById('game-board');
+
+        function initGame() {
+            gameBoard.innerHTML = '';
+            isProcessing = false;
+            updateStatsDisplay();
+            
+            for (let i = 0; i < TOTAL_CARDS; i++) {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'group perspective-1000 h-48 w-full';
+                cardWrapper.setAttribute('data-aos', 'zoom-in');
+                cardWrapper.setAttribute('data-aos-delay', i * 50);
+
+                const card = document.createElement('div');
+                card.className = 'card w-full h-full relative';
+                card.id = `card-${i}`;
+                
+                const cardInner = document.createElement('div');
+                cardInner.className = 'card-inner shadow-xl rounded-2xl';
+                cardInner.onclick = () => flipCard(cardInner, i);
+
+                const front = document.createElement('div');
+                front.className = 'card-front';
+                front.innerHTML = `
+                    <div class="mb-2 text-yellow-300 drop-shadow-md">
+                        <i data-lucide="gift" width="48" height="48"></i>
+                    </div>
+                    <div class="text-tetGold font-bold text-2xl font-slogan">Phúc</div>
+                    <div class="text-white text-xs mt-2 opacity-80 flex items-center gap-1">
+                        <i data-lucide="hand-metal" class="w-3 h-3"></i> Chạm để mở
+                    </div>
+                `;
+
+                const back = document.createElement('div');
+                back.className = 'card-back';
+                back.innerHTML = `<span class="loading-text text-gray-400 animate-spin"><i data-lucide="loader-2"></i></span>`;
+
+                cardInner.appendChild(front);
+                cardInner.appendChild(back);
+                card.appendChild(cardInner);
+                cardWrapper.appendChild(card);
+                gameBoard.appendChild(cardWrapper);
+            }
+            lucide.createIcons();
+        }
+
+        function flipCard(element, index) {
+            if(currentTurns <= 0) {
+                showOutOfTurnsModal();
+                return;
+            }
+
+            if (isProcessing || element.parentElement.classList.contains('flipped')) return;
+            
+            isProcessing = true;
+            currentTurns--;
+            
+            const parent = element.parentElement;
+            // Copy đối tượng prize để tránh sửa trực tiếp vào config gốc
+            let prize = { ...getWeightedRandomPrize() };
+            
+            // LOGIC XỬ LÝ LỜI CHÚC & TỔNG TIỀN
+            let displayMessage = prize.message;
+            if (prize.id === 7) { // Nếu là ô Lời Chúc
+                // Random lời chúc Bính Ngọ
+                const randomWish = HORSE_YEAR_WISHES[Math.floor(Math.random() * HORSE_YEAR_WISHES.length)];
+                displayMessage = randomWish;
+                prize.customMessage = randomWish; // Lưu tạm để hiển thị ở modal
+            }
+
+            if (prize.value > 0) {
+                totalMoney += prize.value;
+            }
+
+            // Cập nhật lại UI tiền và lượt sau khi tính toán
+            updateStatsDisplay();
+            addToHistory(prize, displayMessage);
+
+            const backSide = element.querySelector('.card-back');
+            let valueClass = prize.value > 0 ? "text-red-600" : "text-gray-600";
+            if (prize.value >= 100000) valueClass = "text-yellow-600 text-2xl";
+
+            backSide.innerHTML = `
+                <div class="text-4xl mb-2 text-yellow-500">
+                    <i data-lucide="${prize.icon}" width="40" height="40"></i>
+                </div>
+                <div class="${valueClass} font-bold text-xl mb-1">${prize.text}</div>
+                <div class="text-xs text-center italic text-gray-500 px-2 line-clamp-2">"${displayMessage}"</div>
+            `;
+            
+            lucide.createIcons({ root: backSide });
+
+            parent.classList.add('flipped');
+            playFlipSound();
+
+            setTimeout(() => {
+                if (prize.value >= 50000) {
+                    triggerConfetti();
+                    playWinSound();
+                }
+                showResultModal(prize, displayMessage);
+            }, 800);
+        }
+
+        // === MODAL SYSTEM ===
+        const modal = document.getElementById('resultModal');
+        const modalContent = document.getElementById('modalContent');
+        const modalPrize = document.getElementById('modalPrize');
+        const modalWish = document.getElementById('modalWish'); // MỚI
+        const modalTitle = document.getElementById('modalTitle');
+        const modalSubtitle = document.getElementById('modalSubtitle');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalBtn = document.getElementById('modalBtn');
+
+        let isOutOfTurnsState = false;
+
+        function showResultModal(prize, message) {
+            isOutOfTurnsState = false;
+            modalTitle.innerText = "Kết Quả";
+            modalSubtitle.innerText = "Bạn đã rút được:";
+            
+            // Hiển thị giá trị
+            modalPrize.innerText = prize.text;
+            
+            // Nếu là lời chúc (không có tiền), hiển thị câu chúc to rõ
+            if (prize.value === 0 && prize.id === 7) {
+                 modalWish.innerText = `"${message}"`;
+                 modalWish.classList.remove('hidden');
+                 modalPrize.classList.add('text-2xl'); // Giảm size chữ tiêu đề một chút cho cân đối
+                 modalPrize.classList.remove('text-4xl');
+            } else {
+                 modalWish.classList.add('hidden');
+                 modalPrize.classList.remove('text-2xl');
+                 modalPrize.classList.add('text-4xl');
+            }
+
+            modalIcon.innerHTML = `<i data-lucide="party-popper" width="64" height="64"></i>`;
+            
+            if(currentTurns > 0) {
+                modalBtn.innerHTML = `<span>Lượt tiếp (${currentTurns})</span> <i data-lucide="arrow-right-circle"></i>`;
+                modalBtn.className = "bg-yellow-500 hover:bg-yellow-400 text-red-900 font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 flex items-center gap-2 mx-auto";
+            } else {
+                modalBtn.innerHTML = `<span>Hết lượt rồi!</span> <i data-lucide="x-circle"></i>`;
+                modalBtn.className = "bg-gray-500 hover:bg-gray-400 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 flex items-center gap-2 mx-auto";
+            }
+            
+            lucide.createIcons({ root: modalBtn });
+            lucide.createIcons({ root: modalIcon });
+
+            openModal();
+        }
+
+        function showOutOfTurnsModal() {
+            isOutOfTurnsState = true;
+            modalTitle.innerText = "Hết Lượt Chơi";
+            modalSubtitle.innerText = "Bạn đã hết lượt rút thăm may mắn.";
+            
+            // Hiển thị tổng kết tiền khi hết lượt
+            modalPrize.innerText = `Tổng thu hoạch: ${totalMoney.toLocaleString('vi-VN')} đ`;
+            modalWish.innerText = "Nạp thêm lượt để săn Jackpot nhé!";
+            modalWish.classList.remove('hidden');
+            
+            modalIcon.innerHTML = `<i data-lucide="lock" width="64" height="64"></i>`;
+            
+            modalBtn.innerHTML = `<span>Reset Lượt (Demo)</span> <i data-lucide="refresh-cw"></i>`;
+            modalBtn.className = "bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transform transition hover:scale-105 flex items-center gap-2 mx-auto";
+            
+            lucide.createIcons({ root: modalBtn });
+            lucide.createIcons({ root: modalIcon });
+
+            openModal();
+        }
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function handleModalAction() {
+            modal.classList.add('opacity-0');
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-90');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                
+                if (isOutOfTurnsState) {
+                    // Reset toàn bộ (cả tiền và lượt) khi bấm nút Reset ở màn hình hết lượt
+                    currentTurns = CONFIG_DATA.initialTurns;
+                    totalMoney = 0; // Reset tiền
+                    resetGame();
+                } else {
+                    resetGame(); 
+                }
+            }, 300);
+        }
+
+        function resetGame() {
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(card => card.classList.remove('flipped'));
+            setTimeout(() => initGame(), 600);
+        }
+
+        function userResetGame() {
+            // Nút reset tay ở ngoài (không hồi lượt, không hồi tiền)
+            resetGame();
+        }
+
+        // === ÂM THANH ===
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicToggle');
+        let isMusicPlaying = false;
+
+        musicBtn.addEventListener('click', () => {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                musicBtn.innerHTML = '<i data-lucide="music"></i> <span class="hidden md:inline">Bật Nhạc</span>';
+                musicBtn.classList.remove('animate-spin');
+            } else {
+                bgMusic.play().catch(e => console.log("Cần tương tác user"));
+                musicBtn.innerHTML = '<i data-lucide="volume-x"></i> <span class="hidden md:inline">Tắt Nhạc</span>';
+                musicBtn.classList.add('animate-spin');
+            }
+            lucide.createIcons({ root: musicBtn }); 
+            isMusicPlaying = !isMusicPlaying;
+        });
+
+        function playFlipSound() {}
+        function playWinSound() {}
+
+        function triggerConfetti() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 999 };
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        window.onload = function() {
+            initGame();
+            renderPrizeList();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
